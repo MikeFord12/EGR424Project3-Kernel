@@ -1,0 +1,2 @@
+# EGR424Project3-Kernel
+You will be developing a pre-emptive multi-threaded kernel on the LM3S6965 microcontroller. The end result of your efforts will be a kernel that provides an abstracted view of the hardware, such that the application developer can be concerned only with writing independent threads/processes to perform system functions. Thread creation, thread switching, scheduling, etc. will all be handled by your kernel. 
