@@ -14,7 +14,7 @@
 typedef struct {
         int active; // non-zero means thread is allowed to run
         char *stack; // pointer to TOP of stack (highest memory location)
-        jmp_buf state; // saved state for longjmp()
+        unsigned savedRegs[40]; //Save R4-R11, R13, and LR in exception handler
 } threadStruct_t;
 
 // thread_t is a pointer to function with no parameters and
@@ -59,16 +59,17 @@ void yield(void)
 void systickInit()
 {
         NVIC_ST_CTRL_R  =  0;
-        NVIC_ST_RELOAD_R =  0x000C3500;
+        NVIC_ST_RELOAD_R =  0x00001F40;
         NVIC_ST_CURRENT_R  =  0;
         NVIC_ST_CTRL_R    |=  0x00000007;
 }
 
 void SysTickISR()
 {
-        //save state of running thread1
 
-        //determine which thread to run unexpected
+        //save state of running thread
+
+        //determine which thread to run next
 
         //restore state of next thread
 
@@ -201,10 +202,6 @@ void main(void)
                 // at threadStarter() with its own stack.
                 createThread(threads[i].state, threads[i].stack);
 
-                /*  for(j=0; j<4096; j++)
-                   {
-                 *(threads[i].stack - j) = 0xF;
-                   }*/
 
         }
 
@@ -216,6 +213,16 @@ void main(void)
         // ANSI C). However, TI's startup_gcc.c code (ResetISR) does not
         // call exit() so we do it manually.
         exit(0);
+}
+
+int save_registers(unsigned* buffer)
+{
+
+    asm volatile ("mrs r1,psp\n"
+                  "stm r0, {r1, r4-r12}");
+
+    return 0;
+    
 }
 
 /*
