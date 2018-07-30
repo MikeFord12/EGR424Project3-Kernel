@@ -25,14 +25,16 @@ typedef void (*thread_t)(void);
 // the threads statically by placing their function addresses in
 // threadTable[]. A more realistic kernel will allow dynamic creation
 // and termination of threads.
-extern void thread1(void);
-extern void thread2(void);
-extern void thread3(void);
+extern void UART_Thread1(void);
+extern void UART_Thread2(void);
+extern void OLED_Thread(void);
+extern void LED_Thread(void);
 
 static thread_t threadTable[] = {
-        thread1,
-        thread2,
-        thread3
+        UART_Thread1,
+        UART_Thread2,
+        OLED_Thread,
+        LED_Thread
 };
 #define NUM_THREADS (sizeof(threadTable)/sizeof(threadTable[0]))
 
@@ -63,6 +65,16 @@ void systickInit()
         NVIC_ST_CURRENT_R  =  0;
         NVIC_ST_CTRL_R    |=  0x00000007;
 }
+
+
+void initializeLED(void){
+        // Initialize Pins for LED
+        SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
+        SYSCTL_RCGC2_R |= SYSCTL_RCGC2_GPIOF;
+        GPIO_PORTF_DIR_R = 0x01;
+        GPIO_PORTF_DEN_R = 0x01;
+}
+
 
 void SysTickISR()
 {
@@ -171,7 +183,7 @@ void main(void)
 
         // Initialize the OLED display and write status.
         RIT128x96x4Init(1000000);
-        RIT128x96x4StringDraw("Scheduler Demo",       20,  0, 15);
+
 
         // Enable the peripherals used by this example.
         SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
@@ -184,6 +196,8 @@ void main(void)
         UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 115200,
                             (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
                              UART_CONFIG_PAR_NONE));
+
+        initializeLED();
 
         // Create all the threads and allocate a stack for each one
         for (i=0; i < NUM_THREADS; i++) {
@@ -218,11 +232,46 @@ void main(void)
 int save_registers(unsigned* buffer)
 {
 
-    asm volatile ("mrs r1,psp\n"
-                  "stm r0, {r1, r4-r12}");
+        asm volatile ("mrs r1,psp\n"
+                      "stm r0, {r1, r4-r12}");
 
-    return 0;
-    
+        return 0;
+
+}
+
+void lock_release(lock_t* lock)
+{
+        lock->lock_count--; // decrement lock count
+
+        if(lock->lock_count == 0 && lock->lock_owner == currThread)
+        {
+                // really unlocked, release the lock
+                lock->lock_owner = 999;
+                lock->lock_state = 1;
+        }
+}
+
+unsigned lock_acquire(lock_t* lock)
+{
+        if(lock->lock_state == 1)
+        {
+                // If already locked, increment lock count
+                lock->lock_count++;
+                lock->lock_state = 0;
+                lock->lock_owner = currThread;
+                return 1;
+        }
+        else
+                return 0;
+
+}
+
+void lock_init(lock_t* lock)
+{
+        lock->lock_state = 1; // initialize lock as released
+        lock->lock_count = 0; // initialize no lock
+        lock->lock_owner = -1; // not an owner
+
 }
 
 /*

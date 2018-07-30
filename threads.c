@@ -7,32 +7,70 @@
 // currThread which indicates the number of the thread currently
 // running.
 
-void thread1(void)
+void UART_Thread1(void)
 {
         unsigned count;
+        int i;
 
-        for (count = 0; count < 10; count++) {
-                iprintf("In thread %u -- pass %d\r\n", currThread, count);
+        while (1) {
+                //aquire lock
+                if(lock_acquire(&UART_LOCK))
+                {
+                        for (count = 0; count < 10; count++) {
+                                for(i=0; i<50000; i++);
+                                iprintf("In thread %u -- pass %d\r\n", currThread, count);
+                        }
+                }
+                //release lock
+                lock_release(&UART_LOCK);
                 yield();
         }
 }
 
-void thread2(void)
+void UART_Thread2(void)
 {
         unsigned count;
+        int i;
 
-        for (count=0; count < 5; count++) {
-                iprintf("In thread %u -- pass %d\r\n", currThread, count);
-                yield();
+        while (1) {
+                //aquire lock
+                if(lock_acquire(&UART_LOCK))
+                {
+                        for (count = 0; count < 10; count++) {
+                                for(i=0; i<50000; i++);
+                                iprintf("In thread %u -- pass %d\r\n", currThread, count);
+                        }
+                        //release lock
+                        lock_release(&UART_LOCK);
+                        yield();
+                }
         }
 }
 
-void thread3(void)
+void OLED_Thread(void)
 {
         unsigned count;
+        int i;
+        while (1)
+        {
+                volatile long i;
+                for(i = 0; i < 100000; i++); // delay
+                RIT128x96x4StringDraw("OLED  ", 30, 8, 15);
+                for(i = 0; i < 100000; i++); // delay
+                RIT128x96x4StringDraw("SCREEN  ", 30, 8, 15);
+                for(i = 0; i < 100000; i++); // delay
+                RIT128x96x4StringDraw("THREAD", 30, 8, 15);
 
-        for (count=0; count < 5; count++) {
-                iprintf("In thread %u -- pass %d\r\n", currThread, count);
+                yield();
+        }
+}
+void LED_Thread(void)
+{
+        unsigned count;
+        int i;
+        while(1)
+        {
+                LED0_REG ^=1;
                 yield();
         }
 }
