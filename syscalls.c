@@ -40,7 +40,21 @@ register char * stack_ptr asm ("sp");
 /* Return number of characters read, no more than 'len' */
 int _read (int file, char *ptr, int len)
 {
-  return 0;
+  long c;
+  int bytesRead = 0;
+
+  (void) file; // Indicate variable is unused
+
+  do {
+    c = UARTCharGetNonBlocking(UART0_BASE);
+    if (c == (long)(-1)) {
+      break;
+    } else {
+      *ptr++ = (char) (c & 0xFF);
+    }
+  } while (++bytesRead < len);
+
+  return bytesRead;
 }
 
 int _lseek (int file, int ptr, int dir)
