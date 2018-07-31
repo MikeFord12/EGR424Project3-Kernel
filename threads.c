@@ -6,7 +6,9 @@
 // scheduler is the single function yield() and the global variable
 // currThread which indicates the number of the thread currently
 // running.
-
+/*****************************************************************************
+// *Insert Comment*
+*****************************************************************************/
 void UART_Thread1(void)
 {
         unsigned count;
@@ -27,6 +29,9 @@ void UART_Thread1(void)
         }
 }
 
+/*****************************************************************************
+// *Insert Comment*
+*****************************************************************************/
 void UART_Thread2(void)
 {
         unsigned count;
@@ -36,8 +41,8 @@ void UART_Thread2(void)
                 //aquire lock
                 if(lock_acquire(&UART_LOCK))
                 {
-                        for (count = 0; count < 10; count++) {
-                                for(i=0; i<50000; i++);
+                        for (count = 0; count < 5; count++) {
+                                for(i=0; i<10000; i++);
                                 iprintf("In thread %u -- pass %d\r\n", currThread, count);
                         }
                         //release lock
@@ -47,6 +52,9 @@ void UART_Thread2(void)
         }
 }
 
+/*****************************************************************************
+// *Insert Comment*
+*****************************************************************************/
 void OLED_Thread(void)
 {
         unsigned count;
@@ -64,6 +72,10 @@ void OLED_Thread(void)
                 yield();
         }
 }
+
+/*****************************************************************************
+// *Insert Comment*
+*****************************************************************************/
 void LED_Thread(void)
 {
         unsigned count;

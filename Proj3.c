@@ -21,6 +21,9 @@ void main(void)
         unsigned i;
         int j;
 		
+		//Initialize the currThread to -1 to start
+		currThread = -1;
+		
 		//Initialize UART lock
 		lock_init(&UART_LOCK);
 
@@ -61,23 +64,32 @@ void main(void)
 
 /*****************************************************************************
 // This function is called from within user thread context. It executes
-// a jump back to the scheduler. When the scheduler returns here, it acts
-// like a standard function return back to the caller of yield().
+// a SVC instruction
 *****************************************************************************/
 void yield(void)
 {
 	asm volatile ("svc #100");
 }
 
+/*****************************************************************************
+// *Insert Comment*
+*****************************************************************************/
 void SystickInit()
 {
         NVIC_ST_CTRL_R  =  0;
         NVIC_ST_RELOAD_R =  0x00001F40;
         NVIC_ST_CURRENT_R  =  0;
         NVIC_ST_CTRL_R    |=  0x00000007;
+		
+		NVIC_ST_CTRL_R = NVIC_ST_CTRL_CLK_SRC |
+							NVIC_ST_CTRL_INTEN|
+							NVIC_ST_CTRL_ENABLE;
 }
 
 
+/*****************************************************************************
+// *Insert Comment*
+*****************************************************************************/
 void InitializeLED(void){
         // Initialize Pins for LED
         SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
@@ -86,6 +98,9 @@ void InitializeLED(void){
         GPIO_PORTF_DEN_R = 0x01;
 }
 
+/*****************************************************************************
+// *Insert Comment*
+*****************************************************************************/
 void InitializePeripherals(void)
 {
         // Set the clocking to run directly from the crystal.
@@ -115,6 +130,9 @@ void InitializePeripherals(void)
 // is saved by createThread() in the LR field of the jump buffer so that
 // the first time the scheduler() does a longjmp() to the thread, we
 // start here.
+/*****************************************************************************
+// *Insert Comment*
+*****************************************************************************/
 void threadStarter(void)
 {
         // Call the entry point for this thread. The next line returns
@@ -135,10 +153,16 @@ void threadStarter(void)
 // initial jump-buffer (as would setjmp()) but with our own values
 // for the stack (passed to createThread()) and LR (always set to
 // threadStarter() for each thread).
+/*****************************************************************************
+// *Insert Comment*
+*****************************************************************************/
 extern void createThread(jmp_buf buf, char *stack);
 
 // This is the "main loop" of the program.
 // This handler gets called either by an SVC call or the systick timer interrupt
+/*****************************************************************************
+// *Insert Comment*
+*****************************************************************************/
 void scheduler_handler(void)
 {
 	    //save state of running thread
@@ -170,6 +194,9 @@ void scheduler_handler(void)
     restore_registers(threads[currThread].savedRegs);
 }
 
+/*****************************************************************************
+// *Insert Comment*
+*****************************************************************************/
 int save_registers(unsigned* buffer)
 {
 
@@ -180,6 +207,9 @@ int save_registers(unsigned* buffer)
 
 }
 
+/*****************************************************************************
+// *Insert Comment*
+*****************************************************************************/
 void restore_registers(unsigned* buffer)
 {
     asm volatile ("ldr r1, [r0] \n"
@@ -191,6 +221,9 @@ void restore_registers(unsigned* buffer)
                   "bx lr");
 }
 
+/*****************************************************************************
+// *Insert Comment*
+*****************************************************************************/
 void lock_release(lock_t* lock)
 {
         lock->lock_count--; // decrement lock count
@@ -203,6 +236,9 @@ void lock_release(lock_t* lock)
         }
 }
 
+/*****************************************************************************
+// *Insert Comment*
+*****************************************************************************/
 unsigned lock_acquire(lock_t* lock)
 {
         if(lock->lock_state == 1)
@@ -218,6 +254,9 @@ unsigned lock_acquire(lock_t* lock)
 
 }
 
+/*****************************************************************************
+// *Insert Comment*
+*****************************************************************************/
 void lock_init(lock_t* lock)
 {
         lock->lock_state = 1; // initialize lock as released

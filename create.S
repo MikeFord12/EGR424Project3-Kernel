@@ -24,23 +24,29 @@
     .global createThread
 createThread:  
 
-  /* Save registers in the jump buffer. Their values are
-     not important when the thread is first created. This line is the same as
-     the first two lines of setjmp(), except we don't save SP and LR since we 
-     want to set these to our own values. Really, the only point of this 
-     instruction is to advance R0 to the right location in the jump buffer for 
-     pointing to SP (without having to do any math :-) */
+	ldr r2, [r1]
+	
+	movw r3, 0x0000
+	movt r3, 0x0100
+	
+	stmdb r2!, {r3}
+	
+	ldr r3, .L0
+	stmdb r2!, {r3}
+	
+	@Initialize r0-r3, r12, and r14
+	mov r3, #0
+	mov r12, #0
+	stmdb r2!, {r3}
+	stmdb r2!, {r3, r12}
+	stmdb r2!, {r3}
+	stmdb r2!, {r3, r12}
+	@save the pointer to the stack pointer
+	str r2, [r1]
+	@Store r4-r12 and PSP on array
+	stm r0, {r2, r4-r12}
+	bx lr
 
-    stmea  r0!, { r4-r10, r11 }
-  
-  /* Now we save SP and LR in that order. SP is the R1 parameter, and we have
-   * to get the address of threadStarter() into a higher register (so they are
-   * placed in the jump buffer in the right order). */
-
-    ldr     R2, .L0
-    stmea   R0!, { R1, R2 }   @ Store "SP" and "LR" for the new thread
-    
-    bx      lr
     
 .L0:
     .word   threadStarter
