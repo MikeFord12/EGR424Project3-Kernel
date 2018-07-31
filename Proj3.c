@@ -38,6 +38,8 @@ void main(void)
 		SystickInit();
 		IntMasterEnable();
 		
+		GPIOPinWrite(5,1,1);
+		
         // Create all the threads and allocate a stack for each one
         for (i=0; i < NUM_THREADS; i++) {
                 // Mark thread as runnable
@@ -81,7 +83,9 @@ void yield(void)
 }
 
 /*****************************************************************************
-   // *Insert Comment*
+//This function initializes the SysTick to generate a 1ms interrupt. 
+//This interrupt is what will be used as a pre-emptive kernel. 
+//After the interrupt fires, the scheduler will take over and revoke access to the thread, thus allowing another thread to do work. 
 *****************************************************************************/
 void SystickInit()
 {
@@ -97,7 +101,7 @@ void SystickInit()
 
 
 /*****************************************************************************
-   // *Insert Comment*
+   // *Initializes LED on boared and pin to measure context switch time
 *****************************************************************************/
 void InitializeLED(void){
         // Initialize Pins for LED
@@ -105,14 +109,18 @@ void InitializeLED(void){
         SYSCTL_RCGC2_R |= SYSCTL_RCGC2_GPIOF;
         GPIO_PORTF_DIR_R = 0x01;
         GPIO_PORTF_DEN_R = 0x01;
+		
+		//Initialize Port E pin 3
+		SYSCTL_RCGC2_R |= SYSCTL_RCGC2_GPIOE;
+		GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_3);
+		GPIOPinWrite(GPIO_PORTE_BASE,GPIO_PIN_3,0xFF);
 }
 
 /*****************************************************************************
-   // *Insert Comment*
+   // Initializes peripherals such as UART 
 *****************************************************************************/
 void InitializePeripherals(void)
 {
-
 
         // Set the clocking to run directly from the crystal.
         SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
@@ -134,10 +142,6 @@ void InitializePeripherals(void)
                             (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
                              UART_CONFIG_PAR_NONE));
 							 
-							 
-		  //CONTEXT SWITCH TIMING SETUP
-		SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
-		GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_1);					 
 
 }
 
@@ -145,10 +149,9 @@ void InitializePeripherals(void)
 // This is the starting point for all threads. It runs in user thread
 // context using the thread-specific stack. The address of this function
 // is saved by createThread() in the LR field of the jump buffer so that
-// the first time the scheduler() does a longjmp() to the thread, we
-// start here.
+// the first time the scheduler
 /*****************************************************************************
-   // *Insert Comment*
+   // starts threads
 *****************************************************************************/
 void threadStarter(void)
 {
@@ -169,20 +172,12 @@ void threadStarter(void)
 // This is the "main loop" of the program.
 // This handler gets called either by an SVC call or the systick timer interrupt
 /*****************************************************************************
-   // *Insert Comment*
+   // Scheduler, executed after SVC call or 1ms
 *****************************************************************************/
 void scheduler_handler(void)
 {
-
-        //save state of running thread
-
-        //determine which thread to run next
-        //  iprintf("HERE 4\r\n");
-        //restore state of next thread
-
-        //return from exception handler to next thread not interrupted thread
-
-		GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_1, 1);
+		//Toggle pin to measure context switch time
+		GPIOPinWrite(GPIO_PORTE_BASE,GPIO_PIN_3,0xFF);
 
         // Save current thread state if not the first time through
         if(currThread != -1)
@@ -197,17 +192,16 @@ void scheduler_handler(void)
                         currThread = 0;
                 }
         } while (threads[currThread].active != 1);
-		
-				GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_1, 0);
+
+		GPIOPinWrite(GPIO_PORTE_BASE,GPIO_PIN_3,0x00);
 
         // Restore the thread state for the thread about to be executed
         // This jumps to the next thread
         restore_registers(threads[currThread].savedRegs);
-		
 }
 
 /*****************************************************************************
-   // *Insert Comment*
+   // saves the threads state and fakes a return
 *****************************************************************************/
 int save_registers(unsigned* buffer)
 {
@@ -220,7 +214,7 @@ int save_registers(unsigned* buffer)
 }
 
 /*****************************************************************************
-   // *Insert Comment*
+   // Restores register and fakes a return 
 *****************************************************************************/
 void restore_registers(unsigned* buffer)
 {
@@ -234,7 +228,7 @@ void restore_registers(unsigned* buffer)
 }
 
 /*****************************************************************************
-   // *Insert Comment*
+   // Releases lock of thread
 *****************************************************************************/
 void lock_release(lock_t* lock)
 {
@@ -249,7 +243,7 @@ void lock_release(lock_t* lock)
 }
 
 /*****************************************************************************
-   // *Insert Comment*
+   // Acquires the lock for thread to use
 *****************************************************************************/
 unsigned lock_acquire(lock_t* lock)
 {
@@ -267,7 +261,7 @@ unsigned lock_acquire(lock_t* lock)
 }
 
 /*****************************************************************************
-   // *Insert Comment*
+   // Initializes Lock
 *****************************************************************************/
 void lock_init(lock_t* lock)
 {
@@ -278,6 +272,9 @@ void lock_init(lock_t* lock)
 }
 
 
+/*****************************************************************************
+   // Instruction to tell processor to go into sleep mode
+*****************************************************************************/
 void enter_sleep_mode()
 {
         asm volatile ("WFI");

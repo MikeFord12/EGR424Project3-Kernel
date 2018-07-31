@@ -65,6 +65,7 @@ void enter_sleep_mode();
 
 
 #define LED0_REG (HWREG(0x40025000 + 0x004))
+#define PIN1_REG (HWREG(0x40024000 + 0x002))
 
 lock_t UART_LOCK;
 
