@@ -20,7 +20,8 @@ static void IntDefaultHandler(void);
 //
 //*****************************************************************************
 extern int main(void);
-extern void SysTickISR(void);
+//extern void SysTickISR(void);
+extern void scheduler_handler(void);
 
 //*****************************************************************************
 //
@@ -43,11 +44,11 @@ void (*const g_pfnVectors[])(void) =
         0,                                  // Reserved
         0,                                  // Reserved
         0,                                  // Reserved
-        IntDefaultHandler,                  // SVCall handler
+        scheduler_handler,                  // SVCall handler
         IntDefaultHandler,                  // Debug monitor handler
         0,                                  // Reserved
         IntDefaultHandler,                  // The PendSV handler
-        SysTickISR,                  // The SysTick handler
+        scheduler_handler,                  // The SysTick handler
         IntDefaultHandler,                  // GPIO Port A
         IntDefaultHandler,                  // GPIO Port B
         IntDefaultHandler,                  // GPIO Port C
