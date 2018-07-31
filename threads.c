@@ -7,7 +7,7 @@
 // currThread which indicates the number of the thread currently
 // running.
 /*****************************************************************************
-// *Insert Comment*
+   // *Insert Comment*
 *****************************************************************************/
 void UART_Thread1(void)
 {
@@ -30,7 +30,7 @@ void UART_Thread1(void)
 }
 
 /*****************************************************************************
-// *Insert Comment*
+   // *Insert Comment*
 *****************************************************************************/
 void UART_Thread2(void)
 {
@@ -53,7 +53,7 @@ void UART_Thread2(void)
 }
 
 /*****************************************************************************
-// *Insert Comment*
+   // *Insert Comment*
 *****************************************************************************/
 void OLED_Thread(void)
 {
@@ -74,7 +74,7 @@ void OLED_Thread(void)
 }
 
 /*****************************************************************************
-// *Insert Comment*
+   // *Insert Comment*
 *****************************************************************************/
 void LED_Thread(void)
 {
@@ -83,6 +83,21 @@ void LED_Thread(void)
         while(1)
         {
                 LED0_REG ^=1;
+                yield();
+        }
+}
+
+
+void idle_thread(void)
+{
+        while(1)
+        {
+                // If we’re running, there’s no useful work to be done
+                //  iprintf("HERE\r\n");
+                enter_sleep_mode();
+                // An interrupt has woken us up and the kernel has processed an ISR.
+                // Let threads run and do useful work
+                //  iprintf("HERE 2\r\n");
                 yield();
         }
 }

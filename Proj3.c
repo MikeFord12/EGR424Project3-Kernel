@@ -1,9 +1,9 @@
 /*--------------------------------------------------------------------------------
--- Date: 07/30/2018 
--- Project Name: EGR-424-Project-3
--- Description: Multi-Threaded Kernel
--- Names: Jason Hunter, Mike Ford, Brandon Baars
-----------------------------------------------------------------------------------*/
+   -- Date: 07/30/2018
+   -- Project Name: EGR-424-Project-3
+   -- Description: Multi-Threaded Kernel
+   -- Names: Jason Hunter, Mike Ford, Brandon Baars
+   ----------------------------------------------------------------------------------*/
 #include <stdio.h>
 #include <setjmp.h>
 #include <stdlib.h>
@@ -12,6 +12,7 @@
 #include "driverlib/gpio.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/uart.h"
+#include "driverlib/interrupt.h"
 #include "rit128x96x4.h"
 #include "scheduler.h"
 
@@ -20,15 +21,15 @@ void main(void)
 {
         unsigned i;
         int j;
-		
-		//Initialize the currThread to -1 to start
-		currThread = -1;
-		
-		//Initialize UART lock
-		lock_init(&UART_LOCK);
 
-		InitializePeripherals();
-		
+        //Initialize the currThread to -1 to start
+        currThread = -1;
+
+        //Initialize UART lock
+        lock_init(&UART_LOCK);
+
+        InitializePeripherals();
+
         InitializeLED();
 
         // Create all the threads and allocate a stack for each one
@@ -63,32 +64,33 @@ void main(void)
 
 
 /*****************************************************************************
-// This function is called from within user thread context. It executes
-// a SVC instruction
+   // This function is called from within user thread context. It executes
+   // a SVC instruction
 *****************************************************************************/
 void yield(void)
 {
-	asm volatile ("svc #100");
+        //    iprintf("HERE 3\r\n");
+        asm volatile ("svc #100");
+
 }
 
 /*****************************************************************************
-// *Insert Comment*
+   // *Insert Comment*
 *****************************************************************************/
 void SystickInit()
 {
         NVIC_ST_CTRL_R  =  0;
         NVIC_ST_RELOAD_R =  0x00001F40;
         NVIC_ST_CURRENT_R  =  0;
-        NVIC_ST_CTRL_R    |=  0x00000007;
-		
-		NVIC_ST_CTRL_R = NVIC_ST_CTRL_CLK_SRC |
-							NVIC_ST_CTRL_INTEN|
-							NVIC_ST_CTRL_ENABLE;
+        NVIC_ST_CTRL_R = NVIC_ST_CTRL_CLK_SRC |
+                         NVIC_ST_CTRL_INTEN |
+                         NVIC_ST_CTRL_ENABLE;
+
 }
 
 
 /*****************************************************************************
-// *Insert Comment*
+   // *Insert Comment*
 *****************************************************************************/
 void InitializeLED(void){
         // Initialize Pins for LED
@@ -99,10 +101,12 @@ void InitializeLED(void){
 }
 
 /*****************************************************************************
-// *Insert Comment*
+   // *Insert Comment*
 *****************************************************************************/
 void InitializePeripherals(void)
 {
+
+
         // Set the clocking to run directly from the crystal.
         SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_OSC_MAIN |
                        SYSCTL_XTAL_8MHZ);
@@ -122,6 +126,9 @@ void InitializePeripherals(void)
         UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 115200,
                             (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
                              UART_CONFIG_PAR_NONE));
+
+        //SystickInit();
+        //  IntMasterEnable();
 }
 
 
@@ -131,7 +138,7 @@ void InitializePeripherals(void)
 // the first time the scheduler() does a longjmp() to the thread, we
 // start here.
 /*****************************************************************************
-// *Insert Comment*
+   // *Insert Comment*
 *****************************************************************************/
 void threadStarter(void)
 {
@@ -154,48 +161,49 @@ void threadStarter(void)
 // for the stack (passed to createThread()) and LR (always set to
 // threadStarter() for each thread).
 /*****************************************************************************
-// *Insert Comment*
+   // *Insert Comment*
 *****************************************************************************/
 extern void createThread(jmp_buf buf, char *stack);
 
 // This is the "main loop" of the program.
 // This handler gets called either by an SVC call or the systick timer interrupt
 /*****************************************************************************
-// *Insert Comment*
+   // *Insert Comment*
 *****************************************************************************/
 void scheduler_handler(void)
 {
-	    //save state of running thread
+
+        //save state of running thread
 
         //determine which thread to run next
-
+        //  iprintf("HERE 4\r\n");
         //restore state of next thread
 
         //return from exception handler to next thread not interrupted thread
-		
-		
-    // Save current thread state if not the first time through
-    if(currThread != -1)
-    {
-        save_registers(threads[currThread].savedRegs);
-    }
-    // Loop through all of the active threads
-    do
-    {
-        if (++currThread >= NUM_THREADS)
+
+
+        // Save current thread state if not the first time through
+        if(currThread != -1)
         {
-            currThread = 0;
+                save_registers(threads[currThread].savedRegs);
         }
-    } while (threads[currThread].active != 1);
-    // toggle pin for measuring context switch time
-    //PIN_CONTEXT ^= 1;     
-    // Restore the thread state for the thread about to be executed
-    // This jumps to the next thread
-    restore_registers(threads[currThread].savedRegs);
+        // Loop through all of the active threads
+        do
+        {
+                if (++currThread >= NUM_THREADS)
+                {
+                        currThread = 0;
+                }
+        } while (threads[currThread].active != 1);
+        // toggle pin for measuring context switch time
+        //PIN_CONTEXT ^= 1;
+        // Restore the thread state for the thread about to be executed
+        // This jumps to the next thread
+        restore_registers(threads[currThread].savedRegs);
 }
 
 /*****************************************************************************
-// *Insert Comment*
+   // *Insert Comment*
 *****************************************************************************/
 int save_registers(unsigned* buffer)
 {
@@ -208,21 +216,21 @@ int save_registers(unsigned* buffer)
 }
 
 /*****************************************************************************
-// *Insert Comment*
+   // *Insert Comment*
 *****************************************************************************/
 void restore_registers(unsigned* buffer)
 {
-    asm volatile ("ldr r1, [r0] \n"
-                  "add r0, r0, #4\n"
-                  "msr psp, r1\n"
-                  "ldm r0, {r4-r12}\n"
-                  "movw lr, 0xfffd\n"
-                  "movt lr, 0xffff\n"
-                  "bx lr");
+        asm volatile ("ldr r1, [r0] \n"
+                      "add r0, r0, #4\n"
+                      "msr psp, r1\n"
+                      "ldm r0, {r4-r12}\n"
+                      "movw lr, 0xfffd\n"
+                      "movt lr, 0xffff\n"
+                      "bx lr");
 }
 
 /*****************************************************************************
-// *Insert Comment*
+   // *Insert Comment*
 *****************************************************************************/
 void lock_release(lock_t* lock)
 {
@@ -237,7 +245,7 @@ void lock_release(lock_t* lock)
 }
 
 /*****************************************************************************
-// *Insert Comment*
+   // *Insert Comment*
 *****************************************************************************/
 unsigned lock_acquire(lock_t* lock)
 {
@@ -255,7 +263,7 @@ unsigned lock_acquire(lock_t* lock)
 }
 
 /*****************************************************************************
-// *Insert Comment*
+   // *Insert Comment*
 *****************************************************************************/
 void lock_init(lock_t* lock)
 {
@@ -263,6 +271,12 @@ void lock_init(lock_t* lock)
         lock->lock_count = 0; // initialize no lock
         lock->lock_owner = -1; // not an owner
 
+}
+
+
+void enter_sleep_mode()
+{
+        asm volatile ("WFI");
 }
 
 /*

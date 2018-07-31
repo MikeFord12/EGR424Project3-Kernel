@@ -18,6 +18,7 @@ extern void UART_Thread1(void);
 extern void UART_Thread2(void);
 extern void OLED_Thread(void);
 extern void LED_Thread(void);
+extern void idle_thread(void);
 
 #define STACK_SIZE 4096   // Amount of stack space for each thread
 #define NUM_THREADS (sizeof(threadTable)/sizeof(threadTable[0]))
@@ -59,6 +60,7 @@ void restore_registers(unsigned* buffer);
 void lock_release(lock_t* lock);
 unsigned lock_acquire(lock_t* lock);
 void lock_init(lock_t* lock);
+void enter_sleep_mode();
 
 
 
