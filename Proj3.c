@@ -31,6 +31,9 @@ void main(void)
         InitializePeripherals();
 
         InitializeLED();
+		
+		//IntMasterEnable();
+		//SystickInit();
 
         // Create all the threads and allocate a stack for each one
         for (i=0; i < NUM_THREADS; i++) {
@@ -127,8 +130,6 @@ void InitializePeripherals(void)
                             (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
                              UART_CONFIG_PAR_NONE));
 
-        //SystickInit();
-        //  IntMasterEnable();
 }
 
 
@@ -195,8 +196,7 @@ void scheduler_handler(void)
                         currThread = 0;
                 }
         } while (threads[currThread].active != 1);
-        // toggle pin for measuring context switch time
-        //PIN_CONTEXT ^= 1;
+
         // Restore the thread state for the thread about to be executed
         // This jumps to the next thread
         restore_registers(threads[currThread].savedRegs);

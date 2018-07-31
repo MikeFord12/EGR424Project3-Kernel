@@ -24,13 +24,17 @@
     .global createThread
 createThread:  
 
+	@Loads the process stack pointer to r2
 	ldr r2, [r1]
 	
+	@ Initializing xPSR
 	movw r3, 0x0000
 	movt r3, 0x0100
 	
+	@Store xPSR in stack 
 	stmdb r2!, {r3}
 	
+	@Setting A2R2 and storing it on stack
 	ldr r3, .L0
 	stmdb r2!, {r3}
 	
@@ -41,8 +45,10 @@ createThread:
 	stmdb r2!, {r3, r12}
 	stmdb r2!, {r3}
 	stmdb r2!, {r3, r12}
+	
 	@save the pointer to the stack pointer
 	str r2, [r1]
+	
 	@Store r4-r12 and PSP on array
 	stm r0, {r2, r4-r12}
 	bx lr
