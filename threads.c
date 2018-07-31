@@ -22,9 +22,10 @@ void UART_Thread1(void)
                                 for(i=0; i<50000; i++);
                                 iprintf("In thread %u -- pass %d\r\n", currThread, count);
                         }
-                }
-                //release lock
+						
+				//release lock
                 lock_release(&UART_LOCK);
+                }
                 yield();
         }
 }
@@ -47,8 +48,9 @@ void UART_Thread2(void)
                         }
                         //release lock
                         lock_release(&UART_LOCK);
-                        yield();
+                       
                 }
+				yield();
         }
 }
 
@@ -82,6 +84,7 @@ void LED_Thread(void)
         int i;
         while(1)
         {
+			for(i=0; i<100000; i++){}
                 LED0_REG ^=1;
                 yield();
         }

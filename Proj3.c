@@ -15,6 +15,8 @@
 #include "driverlib/interrupt.h"
 #include "rit128x96x4.h"
 #include "scheduler.h"
+#include "driverlib/timer.h"
+#include "inc/hw_ints.h"
 
 
 void main(void)
@@ -33,8 +35,9 @@ void main(void)
         InitializeLED();
 		
 		//IntMasterEnable();
-		//SystickInit();
-
+		SystickInit();
+		IntMasterEnable();
+		
         // Create all the threads and allocate a stack for each one
         for (i=0; i < NUM_THREADS; i++) {
                 // Mark thread as runnable
@@ -85,9 +88,10 @@ void SystickInit()
         NVIC_ST_CTRL_R  =  0;
         NVIC_ST_RELOAD_R =  0x00001F40;
         NVIC_ST_CURRENT_R  =  0;
-        NVIC_ST_CTRL_R = NVIC_ST_CTRL_CLK_SRC |
+       /* NVIC_ST_CTRL_R = NVIC_ST_CTRL_CLK_SRC |
                          NVIC_ST_CTRL_INTEN |
-                         NVIC_ST_CTRL_ENABLE;
+                         NVIC_ST_CTRL_ENABLE; */
+	    NVIC_ST_CTRL_R    |=  0x00000007;
 
 }
 
@@ -129,6 +133,11 @@ void InitializePeripherals(void)
         UARTConfigSetExpClk(UART0_BASE, SysCtlClockGet(), 115200,
                             (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
                              UART_CONFIG_PAR_NONE));
+							 
+							 
+		  //CONTEXT SWITCH TIMING SETUP
+		SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);
+		GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_1);					 
 
 }
 
@@ -157,15 +166,6 @@ void threadStarter(void)
         yield();
 }
 
-// This function is implemented in assembly language. It sets up the
-// initial jump-buffer (as would setjmp()) but with our own values
-// for the stack (passed to createThread()) and LR (always set to
-// threadStarter() for each thread).
-/*****************************************************************************
-   // *Insert Comment*
-*****************************************************************************/
-extern void createThread(jmp_buf buf, char *stack);
-
 // This is the "main loop" of the program.
 // This handler gets called either by an SVC call or the systick timer interrupt
 /*****************************************************************************
@@ -182,6 +182,7 @@ void scheduler_handler(void)
 
         //return from exception handler to next thread not interrupted thread
 
+		GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_1, 1);
 
         // Save current thread state if not the first time through
         if(currThread != -1)
@@ -196,10 +197,13 @@ void scheduler_handler(void)
                         currThread = 0;
                 }
         } while (threads[currThread].active != 1);
+		
+				GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_1, 0);
 
         // Restore the thread state for the thread about to be executed
         // This jumps to the next thread
         restore_registers(threads[currThread].savedRegs);
+		
 }
 
 /*****************************************************************************
